@@ -5,13 +5,16 @@ My Next.js starter: App Router, `src/`, Tailwind CSS 4, React Compiler, TypeScri
 ## Create a new app
 
 ```bash
-pnpm create next-app --example "https://github.com/<owner>/nextjs-starter" my-app
+pnpm create next-app --example "https://github.com/narcisolobo/nextjs-starter" my-app
 cd my-app
 cp .env.example .env.local
 pnpm dev
 ```
 
-Then set `meta` in `src/app/layout.tsx` and rename the app in `package.json` if `create-next-app` didn't.
+Then:
+
+- Change `"name"` in `package.json`. `create-next-app` keeps `nextjs-starter`.
+- Set `meta` in `src/app/layout.tsx`.
 
 ## Scripts
 
