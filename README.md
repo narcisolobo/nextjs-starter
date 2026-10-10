@@ -2,6 +2,14 @@
 
 My Next.js starter: App Router, `src/`, Tailwind CSS 4, React Compiler, TypeScript 7, and an ESLint 10 config that replaces `eslint-config-next`.
 
+## Who it's for
+
+`create-next-app` still installs ESLint 9, which npm flags as deprecated on every new project. This template runs current majors instead: ESLint 10 and TypeScript 7. A fresh install prints no deprecation warnings.
+
+That comes at a cost. `eslint-config-next` doesn't support ESLint 10 yet, so the lint config is assembled by hand from community forks, and TypeScript 7 runs alongside TypeScript 6 because `typescript-eslint` can't load TypeScript 7 yet. Both are explained below. If you want the update fixes but not the new majors, see [Prefer fewer new majors](#prefer-fewer-new-majors).
+
+One thing it doesn't fix: `npm audit` on a fresh `create-next-app` reports high-severity vulnerabilities, and so does this template. They're one advisory, [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm) in `braces`, reached through `@next/eslint-plugin-next > fast-glob > micromatch`. npm counts every package on that path, which is how one advisory becomes "5 high". There's no patched release (`braces` 3.0.3 is the latest). Here it's only reachable from ESLint, as a dev dependency, and the issue is a stack overflow on deeply nested glob patterns. None of it ships with your app.
+
 ## Create a new app
 
 ```bash
@@ -15,6 +23,9 @@ Then:
 
 - Change `"name"` in `package.json`. `create-next-app` keeps `nextjs-starter`.
 - Set `meta` in `src/app/layout.tsx`.
+- Replace or delete `LICENSE`. It covers this template, not your app.
+
+Your app gets the versions in this template's lockfile, so it's only as current as the template's last update. To pick up anything newer, run the [update steps](#keeping-it-current) in your app.
 
 ## Scripts
 
@@ -54,17 +65,49 @@ TypeScript 7 doesn't ship the JavaScript compiler API yet, and `typescript-eslin
 
 When `typescript-eslint` supports TypeScript 7, replace both entries with `"typescript": "^7"`.
 
-## Keeping it current
+## Prefer fewer new majors
 
-Pinned versions age, so update the template from time to time:
+Either change works on its own.
+
+**TypeScript 6 only.** Drop the aliases and install plain TypeScript 6. `pnpm typecheck` and `next build` then use the same compiler.
 
 ```bash
-cd /Volumes/Dev/templates/nextjs-starter
+pnpm remove @typescript/native typescript
+pnpm add -D typescript@^6
+```
+
+**`eslint-config-next` instead of the forks.** This puts you back on ESLint 9, so the deprecation warning returns.
+
+```bash
+pnpm remove eslint @eslint-react/eslint-plugin @next/eslint-plugin-next eslint-plugin-import-x eslint-plugin-jsx-a11y-x eslint-plugin-react-hooks typescript-eslint
+pnpm add -D eslint@^9 eslint-config-next@<your next version>
+```
+
+Then replace `eslint.config.mjs` with the one `create-next-app` generates:
+
+```js
+import { defineConfig, globalIgnores } from "eslint/config";
+import nextVitals from "eslint-config-next/core-web-vitals";
+import nextTs from "eslint-config-next/typescript";
+
+const eslintConfig = defineConfig([
+  ...nextVitals,
+  ...nextTs,
+  globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts"]),
+]);
+
+export default eslintConfig;
+```
+
+## Keeping it current
+
+Running new majors means more upkeep than `create-next-app`. Pinned versions age, and I update the template from time to time. The same steps work in an app made from it:
+
+```bash
 pnpm up --latest
 pnpm peers check
 pnpm lint && pnpm typecheck && pnpm build
 git commit -am "chore: update dependencies"
-git push
 ```
 
 `pnpm up --latest` ignores version ranges, so a major release can break tooling without failing the install. That's how TypeScript 7 broke ESLint here. If `pnpm peers check` reports issues or a check fails, fix it or pin that package back before committing.
@@ -73,3 +116,7 @@ While you're in there, check whether these can be retired:
 
 - The TypeScript 6/7 aliases, once `typescript-eslint` accepts TypeScript 7.
 - The `-x` plugin forks, once `eslint-config-next` supports ESLint 10 (if you'd rather go back to it).
+
+## License
+
+[MIT](LICENSE)
