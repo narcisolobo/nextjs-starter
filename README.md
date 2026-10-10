@@ -8,8 +8,6 @@ My Next.js starter: App Router, `src/`, Tailwind CSS 4, React Compiler, TypeScri
 
 That comes at a cost. `eslint-config-next` doesn't support ESLint 10 yet, so the lint config is assembled by hand from community forks, and TypeScript 7 runs alongside TypeScript 6 because `typescript-eslint` can't load TypeScript 7 yet. Both are explained below. If you want the update fixes but not the new majors, see [Prefer fewer new majors](#prefer-fewer-new-majors).
 
-One thing it doesn't fix: `npm audit` on a fresh `create-next-app` reports high-severity vulnerabilities, and so does this template. They're one advisory, [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm) in `braces`, reached through `@next/eslint-plugin-next > fast-glob > micromatch`. npm counts every package on that path, which is how one advisory becomes "5 high". There's no patched release (`braces` 3.0.3 is the latest). Here it's only reachable from ESLint, as a dev dependency, and the issue is a stack overflow on deeply nested glob patterns. None of it ships with your app.
-
 ## Create a new app
 
 ```bash
@@ -127,6 +125,12 @@ While you're in there, check whether these can be retired:
 
 - The TypeScript 6/7 aliases, once `typescript-eslint` accepts TypeScript 7.
 - The `-x` plugin forks, once `eslint-config-next` supports ESLint 10 (if you'd rather go back to it).
+
+## About `npm audit`
+
+If `npm audit` or `pnpm audit` reports a high-severity advisory in `braces` ([GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm)), it comes from `@next/eslint-plugin-next > fast-glob > micromatch > braces`, which every Next.js lint setup includes. npm counts each package on that path, so one advisory can show up as several.
+
+It can't be triggered here. The plugin only globs `settings.next.rootDir` from your ESLint config, and this template doesn't set it, so the vulnerable code never runs. It's a dev dependency, and none of it ships with your app.
 
 ## License
 
