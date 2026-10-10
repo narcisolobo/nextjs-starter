@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>nextjs-starter: a case of LAG syndrome</title>
+  <meta name="description" content="How an ESLint deprecation warning turned into a Next.js starter on ESLint 10 and TypeScript 7, and what it took to keep it current.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:ital,wght@0,400;0,700;0,800;1,400&family=Atkinson+Hyperlegible+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --paper: #f2f5f7;
+      --field: #ffffff;
+      --ink: #1b2a47;
+      --muted: #56657d;
+      --rule: #c5d1dc;
+      --stamp: #b42318;
+      --code-bg: #e6ecf1;
+      --sans: "Atkinson Hyperlegible Next", system-ui, sans-serif;
+      --mono: "Atkinson Hyperlegible Mono", ui-monospace, monospace;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --paper: #13203a;
+        --field: #18284a;
+        --ink: #e6ecf3;
+        --muted: #9fb0c6;
+        --rule: #31446a;
+        --stamp: #ff8a7a;
+        --code-bg: #1e3056;
+      }
+    }
+    :root[data-theme="dark"] {
+      --paper: #13203a;
+      --field: #18284a;
+      --ink: #e6ecf3;
+      --muted: #9fb0c6;
+      --rule: #31446a;
+      --stamp: #ff8a7a;
+      --code-bg: #1e3056;
+    }
+
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: var(--sans);
+      font-size: 1.125rem;
+      line-height: 1.6;
+    }
+    a { color: inherit; text-decoration-thickness: 1px; text-underline-offset: 0.18em; }
+    a:hover { text-decoration-thickness: 2px; }
+    :focus-visible { outline: 3px solid var(--stamp); outline-offset: 3px; border-radius: 2px; }
+
+    .page { max-width: 58rem; margin: 0 auto; padding: 3rem 1rem 4rem; }
+
+    /* Chart header */
+    .chart {
+      position: relative;
+      background: var(--field);
+      border: 1px solid var(--rule);
+      border-radius: 4px;
+      padding: 2rem 1.5rem 1.75rem;
+    }
+    .chart h1 {
+      margin: 0 0 0.25rem;
+      font-size: clamp(2.25rem, 7vw, 4rem);
+      font-weight: 800;
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+    }
+    .chart .lede { margin: 0 0 1.75rem; max-width: 36rem; color: var(--muted); }
+    .fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: 0; margin: 0; }
+    .fields div { border-top: 1px solid var(--rule); padding: 0.6rem 0 0.2rem; }
+    .fields dt { font-size: 0.875rem; color: var(--muted); }
+    .fields dd { margin: 0; font-weight: 700; }
+
+    .stamp {
+      position: absolute;
+      top: 1.5rem;
+      right: 1.5rem;
+      transform: rotate(-6deg);
+      border: 3px solid var(--stamp);
+      border-radius: 6px;
+      color: var(--stamp);
+      padding: 0.4rem 0.8rem 0.5rem;
+      text-align: center;
+      line-height: 1.15;
+    }
+    .stamp b { display: block; font-size: 1.6rem; font-weight: 800; letter-spacing: 0.01em; }
+    .stamp span { font-size: 0.875rem; }
+    @media (prefers-reduced-motion: no-preference) {
+      .stamp { animation: stamp 420ms cubic-bezier(.2,.9,.3,1.3) 300ms both; }
+      @keyframes stamp {
+        from { opacity: 0; transform: rotate(-6deg) scale(1.6); }
+        to { opacity: 1; transform: rotate(-6deg) scale(1); }
+      }
+    }
+
+    /* Case notes */
+    .notes { margin-top: 3rem; }
+    .entry {
+      display: grid;
+      grid-template-columns: 11rem minmax(0, 1fr);
+      gap: 0 2rem;
+      padding: 1.75rem 0;
+      border-top: 1px solid var(--rule);
+    }
+    .entry header { padding-top: 0.15rem; }
+    .entry h2 { margin: 0; font-size: 1.125rem; font-weight: 700; line-height: 1.3; }
+    .entry time { display: block; color: var(--muted); font-size: 0.95rem; }
+    .entry .body { max-width: 38rem; }
+    .entry p { margin: 0 0 1rem; }
+    .entry p:last-child, .entry ul:last-child { margin-bottom: 0; }
+    .entry ul { margin: 0 0 1rem; padding-left: 1.2rem; }
+    .entry li { margin-bottom: 0.35rem; }
+
+    code, pre { font-family: var(--mono); font-size: 0.9em; }
+    :not(pre) > code { background: var(--code-bg); padding: 0.05em 0.3em; border-radius: 3px; overflow-wrap: anywhere; }
+    pre {
+      margin: 0 0 1rem;
+      background: var(--code-bg);
+      border-left: 3px solid var(--rule);
+      padding: 0.85rem 1rem;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      line-height: 1.5;
+    }
+    pre.warn { border-left-color: var(--stamp); }
+
+    .rx { margin: 0 0 1rem; }
+    .rx pre { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; border-left-color: var(--ink); }
+    .rx-bar { display: flex; justify-content: flex-end; margin-top: 0.5rem; }
+    .copy {
+      font: 600 0.875rem var(--sans);
+      color: var(--ink);
+      background: var(--field);
+      border: 1px solid var(--rule);
+      border-radius: 4px;
+      padding: 0.25rem 0.6rem;
+      cursor: pointer;
+    }
+
+    footer.foot { margin-top: 3rem; padding-top: 1.25rem; border-top: 1px solid var(--rule); color: var(--muted); font-size: 0.95rem; }
+
+    @media (max-width: 40rem) {
+      .page { padding-top: 1.5rem; }
+      .chart { padding: 6.75rem 1rem 1.25rem; }
+      .stamp { top: 1rem; right: 1rem; }
+      .entry { grid-template-columns: minmax(0, 1fr); }
+      .entry header { margin-bottom: 0.75rem; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="chart" aria-labelledby="title">
+      <div class="stamp" aria-hidden="true"><b>LAG syndrome</b><span>latest and greatest</span></div>
+      <h1 id="title">nextjs-starter</h1>
+      <p class="lede">A Next.js starter on ESLint 10 and TypeScript 7, and the case notes on how it got that way.</p>
+      <dl class="fields">
+        <div><dt>Stack</dt><dd>ESLint 10, TypeScript 7</dd></div>
+        <div><dt>Admitted</dt><dd>September 29, 2026</dd></div>
+        <div><dt>Attending</dt><dd><a href="https://github.com/narcisolobo">narcisolobo</a></dd></div>
+        <div><dt>Source</dt><dd><a href="https://github.com/narcisolobo/nextjs-starter">GitHub</a></dd></div>
+      </dl>
+    </section>
+
+    <div class="notes">
+      <article class="entry">
+        <header><h2>Presenting complaint</h2><time datetime="2026-09-28">Sep 28</time></header>
+        <div class="body">
+          <p>I was starting a side project called So What? The first thing <code>create-next-app</code> gave me was this:</p>
+<pre class="warn"><code>[WARN] deprecated eslint@9.39.5. 10.11.0 is not
+deprecated, outside the range you declared.</code></pre>
+          <p>ESLint 9 had reached end of support, so every new Next.js app started life with a deprecation warning.</p>
+        </div>
+      </article>
+
+      <article class="entry">
+        <header><h2>First opinion</h2><time datetime="2026-09-28">Sep 28</time></header>
+        <div class="body">
+          <p>Ignore it. <code>eslint-config-next</code> pulls in <code>eslint-plugin-react</code> and <code>eslint-plugin-import</code>, and neither supports ESLint 10. Nothing is broken, so stay on 9.</p>
+          <p>That was good advice, and I didn't take it. I have LAG syndrome: if there's a latest and greatest, I want it.</p>
+        </div>
+      </article>
+
+      <article class="entry">
+        <header><h2>Treatment</h2><time datetime="2026-09-29">Sep 29</time></header>
+        <div class="body">
+          <p>The next afternoon I dropped <code>eslint-config-next</code> and rebuilt its rule set from plugins that do support ESLint 10:</p>
+          <ul>
+            <li><code>@eslint-react/eslint-plugin</code> instead of <code>eslint-plugin-react</code></li>
+            <li><code>eslint-plugin-import-x</code> instead of <code>eslint-plugin-import</code></li>
+            <li><code>eslint-plugin-jsx-a11y-x</code> instead of <code>eslint-plugin-jsx-a11y</code></li>
+          </ul>
+          <p><code>@next/eslint-plugin-next</code> works fine on its own. No peer warnings. Then I wondered whether this could just be my <code>create-next-app</code>, and it can: <code>--example</code> takes any GitHub repo.</p>
+        </div>
+      </article>
+
+      <article class="entry">
+        <header><h2>Complication</h2><time datetime="2026-09-29">Sep 29</time></header>
+        <div class="body">
+          <p>Before making the template, I ran <code>pnpm up --latest</code>. It moved TypeScript from 5.9.3 to 7.0.2 with nothing more than a peer warning. Lint stopped working:</p>
+<pre class="warn"><code>Cannot read properties of undefined (reading 'Intrinsic')</code></pre>
+          <p>TypeScript 7 doesn't ship the JavaScript API that <code>typescript-eslint</code> needs. The sensible fix was to go back to TypeScript 5. See diagnosis. Instead I followed the TypeScript team's notes on running 7 alongside 6: <code>tsc</code> is TypeScript 7, and ESLint and <code>next build</code> get TypeScript 6 under the <code>typescript</code> name.</p>
+          <p>The template went up on GitHub that afternoon.</p>
+        </div>
+      </article>
+
+      <article class="entry">
+        <header><h2>Relapse</h2><time datetime="2026-10-10">Oct 10</time></header>
+        <div class="body">
+          <p>Eleven days later, someone on r/nextjs posted the same deprecation warning plus <em>5 high severity vulnerabilities</em>, and asked if it was just them. Before replying, I audited my own template. It was pinned to <code>next</code> 16.3.6, which had a high-severity SSRF in image optimization by then.</p>
+          <p>A template is only as current as the last time someone remembered to update it. I hadn't.</p>
+        </div>
+      </article>
+
+      <article class="entry">
+        <header><h2>Current regimen</h2><time>Ongoing</time></header>
+        <div class="body">
+          <p>Remembering isn't a plan, so now it updates itself.</p>
+          <ul>
+            <li>Renovate opens one PR a week for minor and patch updates. It merges once CI passes: peer check, lint, typecheck and build.</li>
+            <li>Security fixes don't wait for the weekly batch.</li>
+            <li>Major versions wait for me, because a major release is what broke lint the first time.</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="entry">
+        <header><h2>Not a complication</h2><time datetime="2026-10-10">Oct 10</time></header>
+        <div class="body">
+          <p>Those 5 highs from the Reddit post are one advisory in <code>braces</code>, counted once for every package in the chain under <code>@next/eslint-plugin-next</code>. My template has it too. The maintainer <a href="https://github.com/github/advisory-database/pull/10132">disputes the advisory</a>, and I traced the code: the plugin only globs <code>settings.next.rootDir</code> from your own ESLint config. The template doesn't set it, so the vulnerable code never runs.</p>
+          <p>Don't <code>npm audit fix --force</code> it. That downgrades you to <code>eslint-config-next</code> 14.</p>
+        </div>
+      </article>
+
+      <article class="entry">
+        <header><h2>Contraindications</h2></header>
+        <div class="body">
+          <p>If you don't have LAG syndrome, plain <code>create-next-app</code> is the better choice. It's the official default, and the warning is harmless.</p>
+          <p>If you want the update automation but not the new majors, the README shows how to <a href="https://github.com/narcisolobo/nextjs-starter#prefer-fewer-new-majors">drop TypeScript 7 or go back to <code>eslint-config-next</code></a>.</p>
+        </div>
+      </article>
+
+      <article class="entry">
+        <header><h2>Prescription</h2></header>
+        <div class="body">
+          <div class="rx">
+<pre><code id="cmd">pnpm create next-app --example "https://github.com/narcisolobo/nextjs-starter" my-app</code></pre>
+            <div class="rx-bar"><button class="copy" type="button" data-copy="cmd">Copy command</button></div>
+          </div>
+          <p>App Router, <code>src/</code>, Tailwind CSS 4 and React Compiler come with it. Setup steps, scripts and the full ESLint mapping are in the <a href="https://github.com/narcisolobo/nextjs-starter#readme">README</a>.</p>
+        </div>
+      </article>
+    </div>
+
+    <footer class="foot">
+      MIT licensed. <a href="https://github.com/narcisolobo/nextjs-starter">github.com/narcisolobo/nextjs-starter</a>
+    </footer>
+  </main>
+
+  <script>
+    document.querySelectorAll(".copy").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var text = document.getElementById(btn.dataset.copy).textContent;
+        navigator.clipboard.writeText(text).then(function () {
+          btn.textContent = "Copied";
+          setTimeout(function () { btn.textContent = "Copy command"; }, 1600);
+        }, function () {
+          btn.textContent = "Select and copy";
+        });
+      });
+    });
+  </script>
+</body>
+</html>
