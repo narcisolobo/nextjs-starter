@@ -24,6 +24,7 @@ Then:
 - Change `"name"` in `package.json`. `create-next-app` keeps `nextjs-starter`.
 - Set `meta` in `src/app/layout.tsx`.
 - Replace or delete `LICENSE`. It covers this template, not your app.
+- Keep or delete `renovate.json` (see [Keeping it current](#keeping-it-current)).
 
 Your app gets the versions in this template's lockfile, so it's only as current as the template's last update. To pick up anything newer, run the [update steps](#keeping-it-current) in your app.
 
@@ -101,7 +102,17 @@ export default eslintConfig;
 
 ## Keeping it current
 
-Running new majors means more upkeep than `create-next-app`. Pinned versions age, and I update the template from time to time. The same steps work in an app made from it:
+Running new majors means more upkeep than `create-next-app`. [Renovate](https://docs.renovatebot.com/) handles most of it (`renovate.json`):
+
+- Minor and patch updates arrive as one PR each Monday and merge themselves once CI passes.
+- Security fixes open a PR right away.
+- Majors each get their own PR and wait for a human, because they're what breaks tooling here.
+
+CI (`.github/workflows/ci.yml`) runs `pnpm peers check`, lint, typecheck and build on every PR.
+
+Apps made from the template inherit both files. Install the [Renovate GitHub App](https://github.com/apps/renovate) on your repo to use them, or delete `renovate.json`.
+
+To update everything by hand:
 
 ```bash
 pnpm up --latest
